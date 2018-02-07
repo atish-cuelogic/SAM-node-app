@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM NodeAPP
+Resources:
+  NodeAppLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: NodeAppLambda
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      MemorySize: 128
+      Timeout: 30
+      Policies: 
+       - AWSLambdaBasicExecutionRole
+      Events:
+        NodeAPPEndpoint:
+          Type: Api
+          Properties:
+            Path: /home
+            Method: get
