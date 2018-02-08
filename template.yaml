@@ -2,11 +2,22 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM NodeAPP
 Resources:
-  NodeAppLambda:
+  NodeAppSNSSubscribe:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: NodeAppLambda
-      Handler: index.handler
+      FunctionName: NodeAppSNSSubscribe
+      Handler: subscriber.handler
+      Runtime: nodejs6.10
+      CodeUri: src
+      MemorySize: 128
+      Timeout: 30
+      Policies: 
+       - AWSLambdaBasicExecutionRole
+  NodeAppSNSPublish:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: NodeAppSNSPublish
+      Handler: publisher.handler
       Runtime: nodejs6.10
       CodeUri: src
       MemorySize: 128
@@ -19,3 +30,29 @@ Resources:
           Properties:
             Path: /home
             Method: get
+      Environment:
+        Variables:
+          topicARN: !Ref SnsTopic
+  SnsTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: TestingWithLambdaSNS
+      Subscription:
+      - Protocol: lambda
+        Endpoint: !GetAtt NodeAppSNSSubscribe.Arn
+  SNSTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics:
+        - !Ref SnsTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'sns:Publish'
+            Resource: !Ref SnsTopic
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:s3:::${S3BucketName}"
+            Principal:
+              AWS: '*'
